@@ -17,7 +17,7 @@ export default function HomePage() {
         <h2 style={{ color: '#333' }}>What is LinguaVerse?</h2>
         <p style={{ lineHeight: '1.6' }}>
           LinguaVerse is designed to make language learning engaging and effective. 
-          Whether you're a beginner or looking to perfect your fluency, our interactive 
+          Whether you&apos;re a beginner or looking to perfect your fluency, our interactive {/* FIX: Changed 'you're' to 'you&apos;re' */}
           lessons and personalized exercises will guide you every step of the way.
         </p>
         <p style={{ lineHeight: '1.6' }}>

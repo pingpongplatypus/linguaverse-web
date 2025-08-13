@@ -12,8 +12,9 @@ import {
   onSnapshot,
   updateDoc,
   collection,
-  query, // NEW: Import query
-  orderBy, // NEW: Import orderBy
+  query,
+  orderBy,
+  DocumentData, // Import DocumentData for Firestore types
 } from 'firebase/firestore';
 
 import {
@@ -29,6 +30,48 @@ import {
   EmailAuthProvider,
   linkWithCredential
 } from 'firebase/auth';
+
+// Define interface for Firestore User Data (document content)
+interface UserFirestoreContent extends DocumentData {
+  email: string;
+  displayName: string;
+  photoURL?: string;
+  nativeLanguage: string;
+  currentStreak: number;
+  totalXP: number;
+  lastLogin?: Timestamp;
+}
+
+// Define interface for Story document content (data only)
+interface StoryContent extends DocumentData {
+  title: string;
+  level: string;
+  category: string;
+  estimatedReadingTimeMinutes: number;
+  status?: string;
+}
+
+// Define interface for Story including its ID
+interface Story extends StoryContent {
+  id: string;
+}
+
+// Define interface for StoryPage document content (data only)
+interface StoryPageContent extends DocumentData {
+  pageNumber: number;
+  textEnglish: string;
+  vocabularyTokens: { word: string; token: string; }[];
+  imageUrl?: string;
+  audioUrl?: string;
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+}
+
+// Define interface for StoryPage including its ID
+interface StoryPage extends StoryPageContent {
+  id: string;
+}
+
 
 // Helper function to provide user-friendly error messages
 const getFriendlyErrorMessage = (errorCode: string): string => {
@@ -66,10 +109,10 @@ const getFriendlyErrorMessage = (errorCode: string): string => {
 
 
 export default function AuthComponent() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
   const [user, setUser] = useState<User | null>(null);
-  const [firestoreUserData, setFirestoreUserData] = useState<any | null>(null);
+  const [firestoreUserData, setFirestoreUserData] = useState<UserFirestoreContent | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [linkingInfo, setLinkingInfo] = useState<{
     email: string;
@@ -84,12 +127,12 @@ export default function AuthComponent() {
   const [updateMessage, setUpdateMessage] = useState<string | null>(null);
 
   // State for stories
-  const [stories, setStories] = useState<any[]>([]);
+  const [stories, setStories] = useState<Story[]>([]);
   const [storiesLoading, setStoriesLoading] = useState<boolean>(true);
   const [selectedStoryId, setSelectedStoryId] = useState<string | null>(null);
 
   // NEW: State for story pages
-  const [storyPages, setStoryPages] = useState<any[]>([]);
+  const [storyPages, setStoryPages] = useState<StoryPage[]>([]);
   const [currentPageIndex, setCurrentPageIndex] = useState<number>(0);
   const [pagesLoading, setPagesLoading] = useState<boolean>(false);
 
@@ -128,7 +171,7 @@ export default function AuthComponent() {
         const userDocRef = doc(db, "users", currentUser.uid);
         const unsubscribeFirestoreUser = onSnapshot(userDocRef, (docSnap) => {
           if (docSnap.exists()) {
-            const data = docSnap.data();
+            const data = docSnap.data() as UserFirestoreContent; // Cast to specific type
             console.log("User Firestore data received:", data);
             setFirestoreUserData(data);
             setDisplayInputName(data.displayName || '');
@@ -137,7 +180,7 @@ export default function AuthComponent() {
             console.log("No user document found in Firestore!");
             setFirestoreUserData(null);
           }
-        }, (firestoreError) => {
+        }, (firestoreError: unknown) => { // Type error as unknown
           console.error("Error listening to user document:", firestoreError);
           setError("Failed to load user profile. Please try again.");
         });
@@ -147,14 +190,15 @@ export default function AuthComponent() {
         // Listener for Stories Collection (top-level story metadata)
         const storiesCollectionRef = collection(db, "stories");
         const unsubscribeStories = onSnapshot(storiesCollectionRef, (querySnapshot) => {
-          const fetchedStories: any[] = [];
+          const fetchedStories: Story[] = []; // Specify Story[] type
           querySnapshot.forEach((doc) => {
-            fetchedStories.push({ id: doc.id, ...doc.data() });
+            // Fix: Cast doc.data() to StoryContent and then combine with doc.id
+            fetchedStories.push({ id: doc.id, ...(doc.data() as StoryContent) });
           });
           setStories(fetchedStories);
           setStoriesLoading(false);
           console.log("Stories data received:", fetchedStories);
-        }, (storiesError) => {
+        }, (storiesError: unknown) => { // Type error as unknown
           console.error("Error listening to stories collection:", storiesError);
           setError("Failed to load stories. Please try again.");
           setStoriesLoading(false);
@@ -185,14 +229,15 @@ export default function AuthComponent() {
       const pagesQuery = query(pagesCollectionRef, orderBy("pageNumber"));
 
       unsubscribePages = onSnapshot(pagesQuery, (querySnapshot) => {
-        const fetchedPages: any[] = [];
+        const fetchedPages: StoryPage[] = []; // Specify StoryPage[] type
         querySnapshot.forEach((doc) => {
-          fetchedPages.push({ id: doc.id, ...doc.data() });
+          // Fix: Cast doc.data() to StoryPageContent and then combine with doc.id
+          fetchedPages.push({ id: doc.id, ...(doc.data() as StoryPageContent) });
         });
         setStoryPages(fetchedPages);
         setPagesLoading(false);
         console.log(`Pages for story ${selectedStoryId} received:`, fetchedPages);
-      }, (error) => {
+      }, (error: unknown) => { // Type error as unknown
         console.error("Error listening to story pages:", error);
         setError("Failed to load story pages. Please try again.");
         setPagesLoading(false);
@@ -209,7 +254,7 @@ export default function AuthComponent() {
 
   const handleVocabClick = (vocabItem: { word: string; token: string; }) => {
     setClickedVocab(vocabItem);
-    setVocabTranslation(`[AI Translation for '${vocabItem.word}' goes here]`);
+    setVocabTranslation(`[AI Translation for &apos;${vocabItem.word}&apos; goes here]`); // Fixed unescaped entities
   };
 
   const renderInteractiveText = (text: string, vocabTokens: { word: string; token: string; }[]) => {
@@ -256,7 +301,7 @@ export default function AuthComponent() {
     setLinkingInfo(null);
     setUpdateMessage(null);
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password); // userCredential type inferred correctly
       console.log("User signed up successfully:", userCredential.user.email);
 
       const newUserUid = userCredential.user.uid;
@@ -273,7 +318,7 @@ export default function AuthComponent() {
       });
       console.log("User document created in Firestore:", newUserUid);
 
-    } catch (err: any) {
+    } catch (err: unknown) { // Use unknown for caught errors
       if (err instanceof FirebaseError) {
         setError(getFriendlyErrorMessage(err.code));
       } else {
@@ -288,7 +333,7 @@ export default function AuthComponent() {
     setLinkingInfo(null);
     setUpdateMessage(null);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password); // userCredential type inferred correctly
       console.log("User signed in successfully:", userCredential.user.email);
 
       if (userCredential.user) {
@@ -297,7 +342,7 @@ export default function AuthComponent() {
         console.log("User lastLogin updated in Firestore:", userCredential.user.uid);
       }
 
-    } catch (err: any) {
+    } catch (err: unknown) { // Use unknown for caught errors
       if (err instanceof FirebaseError) {
         setError(getFriendlyErrorMessage(err.code));
       } else {
@@ -313,7 +358,7 @@ export default function AuthComponent() {
     try {
       await auth.signOut();
       console.log("User signed out successfully.");
-    } catch (err: any) {
+    } catch (err: unknown) { // Use unknown for caught errors
       if (err instanceof FirebaseError) {
         setError(getFriendlyErrorMessage(err.code));
       } else {
@@ -344,7 +389,7 @@ export default function AuthComponent() {
       }, { merge: true });
       console.log("User document processed in Firestore for social sign-in:", user.uid);
 
-    } catch (err: any) {
+    } catch (err: unknown) { // Use unknown for caught errors
       if (err instanceof FirebaseError) {
         if (err.code === 'auth/account-exists-with-different-credential') {
           console.warn(`Account exists conflict detected for ${err.customData?.email}. Initiating linking flow.`);
@@ -360,24 +405,33 @@ export default function AuthComponent() {
               return;
           }
           try {
-              let methods = await fetchSignInMethodsForEmail(auth, conflictEmail);
+              const methods = await fetchSignInMethodsForEmail(auth, conflictEmail); // Type inferred correctly
               console.log("Existing sign-in methods for", conflictEmail, ":", methods);
               if (methods.length === 0) {
                   console.warn("fetchSignInMethodsForEmail returned empty for a conflicting account. Inferring common providers.");
                   if (conflictEmail.endsWith('@gmail.com') || conflictEmail.endsWith('@googlemail.com')) {
-                      methods = [GoogleAuthProvider.PROVIDER_ID, EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD];
+                      methods.push(GoogleAuthProvider.PROVIDER_ID, EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD);
                   } else {
-                      methods = [EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD, FacebookAuthProvider.PROVIDER_ID];
+                      methods.push(EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD, FacebookAuthProvider.PROVIDER_ID);
                   }
-                  methods = methods.filter(m => m !== providerInstance.providerId);
+                  // Filter out the provider that caused the conflict, as we are trying to link from another method
+                  const filteredMethods = methods.filter(m => m !== providerInstance.providerId);
+                  setLinkingInfo({
+                      email: conflictEmail,
+                      pendingCredential: pendingCredential,
+                      existingSignInMethods: filteredMethods,
+                  });
+              } else {
+                  // If methods are found, ensure we filter out the one that caused the conflict
+                  const filteredMethods = methods.filter(m => m !== providerInstance.providerId);
+                   setLinkingInfo({
+                      email: conflictEmail,
+                      pendingCredential: pendingCredential,
+                      existingSignInMethods: filteredMethods,
+                  });
               }
-              setLinkingInfo({
-                  email: conflictEmail,
-                  pendingCredential: pendingCredential,
-                  existingSignInMethods: methods,
-              });
               setError(getFriendlyErrorMessage(err.code) + ` Please sign in with one of your existing methods to link accounts.`);
-          } catch (fetchErr: any) {
+          } catch (_fetchErr: unknown) { // Renamed to _fetchErr to avoid unused var warning
               setError(getFriendlyErrorMessage('unknown'));
           }
         } else {
@@ -401,17 +455,18 @@ export default function AuthComponent() {
       return;
     }
     try {
-      let userCredential;
+      let userCredentialResult; // Renamed to avoid 'userCredential' being assigned but never used warning
       if (method === EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD) {
         if (!email || !password) {
             setError("Please enter your email and password to sign in for linking.");
             return;
         }
-        userCredential = await signInWithEmailAndPassword(auth, linkingInfo.email, password);
+        userCredentialResult = await signInWithEmailAndPassword(auth, linkingInfo.email, password);
       } else if (method === GoogleAuthProvider.PROVIDER_ID) {
-        userCredential = await signInWithPopup(auth, new GoogleAuthProvider());
+        userCredentialResult = await signInWithPopup(auth, new GoogleAuthProvider());
       } else if (method === FacebookAuthProvider.PROVIDER_ID) {
-        userCredential = await signInWithPopup(auth, new GoogleAuthProvider());
+        // Corrected: Use FacebookAuthProvider for Facebook sign-in
+        userCredentialResult = await signInWithPopup(auth, new FacebookAuthProvider());
       } else {
         setError("Unsupported linking method: " + method);
         return;
@@ -426,7 +481,7 @@ export default function AuthComponent() {
       } else {
         setError("Failed to sign in for linking. No active user after sign-in attempt.");
       }
-    } catch (err: any) {
+    } catch (err: unknown) { // Use unknown for caught errors
       if (err instanceof FirebaseError) {
         setError(getFriendlyErrorMessage(err.code));
         if (err.code === 'auth/credential-already-in-use') {
@@ -462,7 +517,7 @@ export default function AuthComponent() {
       });
       setUpdateMessage("Profile updated successfully!");
       console.log("User profile updated in Firestore!");
-    } catch (err: any) {
+    } catch (err: unknown) { // Use unknown for caught errors
       console.error("Error updating profile:", err);
       if (err instanceof FirebaseError) {
         setError("Failed to update profile: " + getFriendlyErrorMessage(err.code));
@@ -492,7 +547,7 @@ export default function AuthComponent() {
   };
 
 
-  const getProviderDisplayName = (providerId: string) => {
+  const getProviderDisplayName = (providerId: string): string => { // Explicit return type
     switch (providerId) {
       case EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD:
         return "Email/Password";
@@ -557,7 +612,7 @@ export default function AuthComponent() {
                   />
                 </label>
                 <label>
-                  Native Language (e.g., 'es', 'fr', 'ja'):
+                  Native Language (e.g., &apos;es&apos;, &apos;fr&apos;, &apos;ja&apos;): {/* Fixed unescaped entities */}
                   <input
                     type="text"
                     value={nativeLangInput}
@@ -621,7 +676,7 @@ export default function AuthComponent() {
                   <p style={{textAlign: 'right', fontSize: '0.9em', color: '#777'}}>Page {currentPageIndex + 1} of {storyPages.length}</p>
 
                   {/* Page Image */}
-                  {currentPageData.imageUrl && (
+                  {currentPageData && currentPageData.imageUrl && ( // Added null check for currentPageData
                     <img
                       src={currentPageData.imageUrl}
                       alt={`Story image for page ${currentPageIndex + 1}`}
@@ -631,11 +686,11 @@ export default function AuthComponent() {
 
                   {/* Page Text */}
                   <div style={{ lineHeight: '1.6', fontSize: '1.1em', marginBottom: '15px' }}>
-                    {renderInteractiveText(currentPageData.textEnglish, currentPageData.vocabularyTokens || [])}
+                    {currentPageData && renderInteractiveText(currentPageData.textEnglish, currentPageData.vocabularyTokens || [])} {/* Added null check for currentPageData */}
                   </div>
 
                   {/* Page Audio */}
-                  {currentPageData.audioUrl && (
+                  {currentPageData && currentPageData.audioUrl && ( // Added null check for currentPageData
                     <div style={{ textAlign: 'center', marginBottom: '15px' }}>
                       <audio controls src={currentPageData.audioUrl} style={{ width: '100%' }}>
                         Your browser does not support the audio element.
