@@ -16,7 +16,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4 # Checkout your repository
       - run: npm install # Install project dependencies
-      - run: npm run build # Build your Next.js application
+      # MODIFIED LINE: Explicitly pass the environment variable to the 'next build' command
+      - run: FIREBASE_ADMIN_SDK_CONFIG="${{ secrets.FIREBASE_ADMIN_SDK_CONFIG }}" npm run build
       - uses: FirebaseExtended/action-hosting-deploy@v0 # Use the Firebase App Hosting GitHub Action
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
