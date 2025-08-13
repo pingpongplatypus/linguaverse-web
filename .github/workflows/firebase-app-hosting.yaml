@@ -16,8 +16,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4 # Checkout your repository
       - run: npm install # Install project dependencies
-      # MODIFIED LINE: Explicitly pass the environment variable to the 'next build' command
-      - run: FIREBASE_ADMIN_SDK_CONFIG="${{ secrets.FIREBASE_ADMIN_SDK_CONFIG }}" npm run build
+      - run: npm install -g firebase-tools # Ensure Firebase CLI is available for buildEnvironment to be recognized
+      - run: npm run build # Build your Next.js application (no direct env var here anymore)
       - uses: FirebaseExtended/action-hosting-deploy@v0 # Use the Firebase App Hosting GitHub Action
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
@@ -26,9 +26,9 @@ jobs:
           backendId: 'linguaverse-web'
           rootDirectory: '/' # Your app's root directory relative to repository root
           publicDirectory: 'out' # Your app's build output directory
-          # If your app needs environment variables at build time, you can pass them here:
-          # buildEnvironment:
-          #   NEXT_PUBLIC_API_KEY: ${{ secrets.NEXT_PUBLIC_API_KEY }}
+          # CRITICAL CHANGE: Pass build-time environment variables using buildEnvironment
+          buildEnvironment:
+            FIREBASE_ADMIN_SDK_CONFIG: '${{ secrets.FIREBASE_ADMIN_SDK_CONFIG }}' # This makes it available to Next.js build
           # If your app needs secrets at runtime for Cloud Run, you can define them here:
           # backendEnvironment:
           #   MY_SECRET_KEY: MY_SECRET_VALUE
