@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { dbAdmin } from '@/lib/firebase-admin'; // This is your Firestore instance
-import * as admin from 'firebase-admin'; // <--- ADD THIS IMPORT!
+import * as admin from 'firebase-admin';
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     const docRef = await dbAdmin.collection('messages').add({
       text: message,
       authorId: userId,
-      timestamp: admin.firestore.FieldValue.serverTimestamp(), // <--- USE THIS LINE!
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
     });
 
     return NextResponse.json(
@@ -26,10 +26,14 @@ export async function POST(request: NextRequest) {
       { status: 200 } // OK
     );
 
-  } catch (error: any) {
+  } catch (error: unknown) { // Changed 'any' to 'unknown' for better type safety
     console.error('API Error:', error);
+    let errorMessage = 'An unknown error occurred.';
+    if (error instanceof Error) { // Type guard to check if it's an Error instance
+      errorMessage = error.message;
+    }
     return NextResponse.json(
-      { error: 'Internal Server Error', details: error.message },
+      { error: 'Internal Server Error', details: errorMessage },
       { status: 500 } // Internal Server Error
     );
   }
