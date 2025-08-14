@@ -17,9 +17,11 @@ jobs:
       - name: Debug Test Secret
         run: echo "The TEST_SECRET_VALUE is: ${{ secrets.TEST_SECRET_VALUE }}"
 
-      # CRITICAL FIX: Pass FIREBASE_ADMIN_SDK_CONFIG directly to the npm run build command
+      # MODIFIED STEP: Pass FIREBASE_ADMIN_SDK_CONFIG using the 'env' block for consistency and robustness
       - name: Build Next.js Application
-        run: FIREBASE_ADMIN_SDK_CONFIG='${{ secrets.FIREBASE_ADMIN_SDK_CONFIG }}' npm run build
+        run: npm run build
+        env:
+          FIREBASE_ADMIN_SDK_CONFIG: '${{ secrets.FIREBASE_ADMIN_SDK_CONFIG }}' # Should now work consistently
 
       # Install Firebase CLI globally
       - name: Install Firebase CLI
@@ -39,4 +41,4 @@ jobs:
       - name: Deploy to Firebase App Hosting using CLI
         run: firebase apphosting:deploy --project project-x-68603 --backend-id linguaverse-web --input-directory out
         # GOOGLE_APPLICATION_CREDENTIALS is now set and persistent from the previous step.
-        # FIREBASE_ADMIN_SDK_CONFIG is handled by the build command, no need to re-export here.
+        # FIREBASE_ADMIN_SDK_CONFIG is handled by the build step's env block.
