@@ -13,6 +13,10 @@ jobs:
       - uses: actions/checkout@v4 # Checks out your repository
       - run: npm install # Installs project dependencies
 
+      # NEW DIAGNOSTIC STEP: Test a simple secret value
+      - name: Debug Test Secret
+        run: echo "The TEST_SECRET_VALUE is: ${{ secrets.TEST_SECRET_VALUE }}"
+
       # CRITICAL FIX: Pass FIREBASE_ADMIN_SDK_CONFIG directly to the npm run build command
       - name: Build Next.js Application
         run: FIREBASE_ADMIN_SDK_CONFIG='${{ secrets.FIREBASE_ADMIN_SDK_CONFIG }}' npm run build
