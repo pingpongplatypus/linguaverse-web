@@ -1,4 +1,3 @@
-# New file: firebase-app-hosting-new.yaml
 name: Deploy to Firebase App Hosting
 
 on:
