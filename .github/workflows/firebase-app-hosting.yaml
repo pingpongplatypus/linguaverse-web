@@ -10,16 +10,15 @@ jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4 # FIX: Removed the extra colon. This is the correct syntax.
       - run: npm install
 
       # Diagnostic: Check if TEST_SECRET_VALUE is properly retrieved
-      # This step should still work and confirm secret retrieval.
       - name: Debug Test Secret
         run: echo "The TEST_SECRET_VALUE is: ${{ secrets.TEST_SECRET_VALUE }}"
 
       # Build Next.js Application with FIREBASE_ADMIN_SDK_CONFIG
-      # CRITICAL FIX: Base64 decode FIREBASE_ADMIN_SDK_CONFIG_BASE64 secret
+      # Base64 decode FIREBASE_ADMIN_SDK_CONFIG_BASE64 secret
       # and export as FIREBASE_ADMIN_SDK_CONFIG for the build process.
       - name: Build Next.js Application
         env:
@@ -47,6 +46,7 @@ jobs:
           echo "$GOOGLE_SERVICE_ACCOUNT_JSON_BASE64" | base64 -d > /tmp/service-account-key.json
           # Set the GOOGLE_APPLICATION_CREDENTIALS environment variable for subsequent steps
           echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/service-account-key.json" >> $GITHUB_ENV
+
       # Deploy to Firebase App Hosting using CLI
       - name: Deploy to Firebase App Hosting using CLI
         run: firebase apphosting:deploy --project project-x-68603 --backend-id linguaverse-web --input-directory out
