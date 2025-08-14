@@ -12,14 +12,15 @@ import { getStorage, FirebaseStorage } from 'firebase/storage'; // Import Fireba
 // Your web app's Firebase configuration
 // IMPORTANT: These values are crucial for connecting your app to your Firebase project.
 // They have been updated with your Project X details.
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyAZPkEYf3vNM6G6ujrxHb_R_FHWVEW9QOs",
+  apiKey: "AIzaSyD4Dk2gqmCwRoKirNZ_CkCaQhRqa8d716k",
   authDomain: "project-x-68603.firebaseapp.com",
   projectId: "project-x-68603",
   storageBucket: "project-x-68603.firebasestorage.app",
   messagingSenderId: "814338411344",
-  appId: "1:814338411344:web:e694c646fe9ee75f43ba55",
-  measurementId: "G-6LSNGDNNXS" // Only include if Google Analytics is configured
+  appId: "1:814338411344:web:2b22e034c5b63d0f43ba55",
+  measurementId: "G-YT8Q1VXJB4"
 };
 
 // Initialize Firebase App
