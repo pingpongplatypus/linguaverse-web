@@ -10,17 +10,30 @@ jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - run: npm install
-      - run: npm run build
-      - uses: FirebaseExtended/action-hosting-deploy@v1 # CRITICAL CHANGE: Changed back to @v1
-        with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_PROJECT_X_68603 }}'
-          projectId: 'project-x-68603'
-          backendId: 'linguaverse-web'
-          rootDirectory: '/'
-          publicDirectory: 'out'
-          # buildEnvironment: This block is currently removed to get the YAML to parse.
-          # We will re-add it once the action itself is found and executed.
-          #   FIREBASE_ADMIN_SDK_CONFIG: '${{ secrets.FIREBASE_ADMIN_SDK_CONFIG }}'
+      - uses: actions/checkout@v4 # Checks out your repository
+      - run: npm install # Installs project dependencies
+      - run: npm run build # Builds your Next.js application
+
+      # NEW STEP: Install Firebase CLI globally
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      # NEW STEP: Authenticate Firebase CLI using your Service Account JSON
+      # This creates a temporary service account key file and sets the GOOGLE_APPLICATION_CREDENTIALS env var
+      - name: Authenticate Firebase CLI with Service Account
+        env:
+          # This secret holds the JSON content of your Firebase Service Account Key
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_PROJECT_X_68603 }}
+        run: |
+          # Create a temporary file with the service account JSON
+          echo "$GOOGLE_SERVICE_ACCOUNT_JSON" > /tmp/service-account-key.json
+          # Set the GOOGLE_APPLICATION_CREDENTIALS environment variable for subsequent steps
+          echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/service-account-key.json" >> $GITHUB_ENV
+
+      # NEW STEP: Deploy to Firebase App Hosting using the Firebase CLI
+      - name: Deploy to Firebase App Hosting using CLI
+        run: firebase apphosting:deploy --project project-x-68603 --backend-id linguaverse-web --input-directory out
+        env:
+          # This environment variable is crucial for your Next.js build process (e.g., in lib/firebase-admin.ts)
+          # We pass it again here to ensure it's available throughout the pipeline for any tools that might need it
+          FIREBASE_ADMIN_SDK_CONFIG: '${{ secrets.FIREBASE_ADMIN_SDK_CONFIG }}'
