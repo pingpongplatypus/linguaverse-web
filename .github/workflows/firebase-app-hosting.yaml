@@ -13,17 +13,15 @@ jobs:
       - uses: actions/checkout@v4 # Checks out your repository
       - run: npm install # Installs project dependencies
 
-      # MODIFIED STEP: Pass FIREBASE_ADMIN_SDK_CONFIG as an environment variable directly to the build step
+      # CRITICAL FIX: Pass FIREBASE_ADMIN_SDK_CONFIG directly to the npm run build command
       - name: Build Next.js Application
-        run: npm run build
-        env:
-          FIREBASE_ADMIN_SDK_CONFIG: '${{ secrets.FIREBASE_ADMIN_SDK_CONFIG }}' # This makes it available for Next.js build-time operations
+        run: FIREBASE_ADMIN_SDK_CONFIG='${{ secrets.FIREBASE_ADMIN_SDK_CONFIG }}' npm run build
 
-      # NEW STEP: Install Firebase CLI globally
+      # Install Firebase CLI globally
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
-      # NEW STEP: Authenticate Firebase CLI with Service Account
+      # Authenticate Firebase CLI with Service Account
       # This creates a temporary service account key file and sets the GOOGLE_APPLICATION_CREDENTIALS env var
       # which persists for subsequent steps in the job.
       - name: Authenticate Firebase CLI with Service Account
@@ -33,8 +31,8 @@ jobs:
           echo "$GOOGLE_SERVICE_ACCOUNT_JSON" > /tmp/service-account-key.json
           echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/service-account-key.json" >> $GITHUB_ENV # This makes it available to the next step
 
-      # NEW STEP: Deploy to Firebase App Hosting using the Firebase CLI
+      # Deploy to Firebase App Hosting using the Firebase CLI
       - name: Deploy to Firebase App Hosting using CLI
         run: firebase apphosting:deploy --project project-x-68603 --backend-id linguaverse-web --input-directory out
-        # GOOGLE_APPLICATION_CREDENTIALS is set in the previous step and should persist
-        # FIREBASE_ADMIN_SDK_CONFIG is also set for the build and doesn't need to be explicitly passed here again for the deploy command.
+        # GOOGLE_APPLICATION_CREDENTIALS is now set and persistent from the previous step.
+        # FIREBASE_ADMIN_SDK_CONFIG is handled by the build command, no need to re-export here.
