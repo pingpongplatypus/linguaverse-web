@@ -14,14 +14,17 @@ jobs:
       - run: npm install
 
       # Diagnostic: Check if TEST_SECRET_VALUE is properly retrieved
+      # This step should still work and confirm secret retrieval.
       - name: Debug Test Secret
         run: echo "The TEST_SECRET_VALUE is: ${{ secrets.TEST_SECRET_VALUE }}"
 
       # Build Next.js Application with FIREBASE_ADMIN_SDK_CONFIG
+      # CRITICAL FIX: Using '|' for FIREBASE_ADMIN_SDK_CONFIG to handle multi-line JSON values
       - name: Build Next.js Application
         run: npm run build
         env:
-          FIREBASE_ADMIN_SDK_CONFIG: '${{ secrets.FIREBASE_ADMIN_SDK_CONFIG }}'
+          FIREBASE_ADMIN_SDK_CONFIG: |
+            ${{ secrets.FIREBASE_ADMIN_SDK_CONFIG }}
 
       # Install Firebase CLI
       - name: Install Firebase CLI
