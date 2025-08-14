@@ -14,23 +14,25 @@ jobs:
       - run: npm install
 
       # Diagnostic: Check if TEST_SECRET_VALUE is properly retrieved
+      # This step should still work and confirm secret retrieval.
       - name: Debug Test Secret
         run: echo "The TEST_SECRET_VALUE is: ${{ secrets.TEST_SECRET_VALUE }}"
 
       # Build Next.js Application with FIREBASE_ADMIN_SDK_CONFIG
-      # The secret 'FIREBASE_ADMIN_SDK_CONFIG' is now the raw JSON string.
-      # It will be directly available as an env var.
+      # CRITICAL FIX: Use '|' literal block scalar for FIREBASE_ADMIN_SDK_CONFIG
+      # This tells YAML to parse the secret content exactly as is, including newlines.
       - name: Build Next.js Application
         run: npm run build
         env:
-          FIREBASE_ADMIN_SDK_CONFIG: '${{ secrets.FIREBASE_ADMIN_SDK_CONFIG }}'
+          FIREBASE_ADMIN_SDK_CONFIG: |
+            ${{ secrets.FIREBASE_ADMIN_SDK_CONFIG }}
 
       # Install Firebase CLI
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
       # Authenticate Firebase CLI with Service Account
-      # We now use the Base64 encoded secret for this, then decode it.
+      # We use the Base64 encoded secret for this, then decode it.
       - name: Authenticate Firebase CLI with Service Account
         env:
           # This secret holds the Base64 encoded JSON content
