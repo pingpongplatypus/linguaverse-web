@@ -21,5 +21,3 @@ jobs:
           backendId: 'linguaverse-web'
           rootDirectory: '/'
           publicDirectory: 'out'
-          buildEnvironment:
-            FIREBASE_ADMIN_SDK_CONFIG: '${{ secrets.FIREBASE_ADMIN_SDK_CONFIG }}'
