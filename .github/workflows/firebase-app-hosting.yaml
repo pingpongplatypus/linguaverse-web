@@ -20,6 +20,6 @@ jobs:
           projectId: 'project-x-68603'
           backendId: 'linguaverse-web'
           rootDirectory: '/'
-          publicDirectory: 'out'
+          publicDirectory: 'out' # This line should start at column 11, not 13
           buildEnvironment:
             FIREBASE_ADMIN_SDK_CONFIG: '${{ secrets.FIREBASE_ADMIN_SDK_CONFIG }}'
